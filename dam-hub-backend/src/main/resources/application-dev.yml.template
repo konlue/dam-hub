@@ -1,0 +1,26 @@
+# 开发环境配置模板 - 请复制此文件为 application-dev.yml 并填入您的真实值
+# 注意：application-dev.yml 已加入 .gitignore，切勿提交
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/dam_picture
+    username: root          # 替换为您的数据库用户名
+    password:               # 替换为您的数据库密码
+  redis:
+    password:               # 替换为您的 Redis 密码（若无密码则留空）
+  shardingsphere:
+    datasource:
+      dam_picture:
+        username: root      # 替换为分表数据源用户名
+        password:           # 替换为分表数据源密码
+
+cos:
+  client:
+    host: https://your-bucket.cos.your-region.myqcloud.com  # 替换为您自己的 bucket 地址
+    secretId:               # 替换为您的腾讯云 SecretId
+    secretKey:              # 替换为您的腾讯云 SecretKey
+    region: ap-guangzhou    # 替换为您的存储桶地域
+    bucket: your-bucket     # 替换为您的存储桶名称
+
+aliYunAi:
+  apiKey:                   # 替换为您的阿里云 AI API Key
