@@ -66,40 +66,19 @@
       <!-- 意图分析 -->
       <div v-if="result?.intent" class="section">
         <h3>意图分析</h3>
-        <div class="intent-row">
-          <div class="intent-tags">
-            <el-tag v-if="result.intent.industry" type="primary" effect="plain">
-              行业：{{ result.intent.industry }}
-            </el-tag>
-            <el-tag v-if="result.intent.purpose" type="success" effect="plain">
-              用途：{{ result.intent.purpose }}
-            </el-tag>
-            <el-tag v-if="result.intent.scene" type="warning" effect="plain">
-              场景：{{ result.intent.scene }}
-            </el-tag>
-            <el-tag v-if="result.intent.style" type="danger" effect="plain">
-              风格：{{ result.intent.style }}
-            </el-tag>
-          </div>
-          <div v-if="result?.recommendations?.length" class="intent-preview">
-            <div
-              v-for="item in result.recommendations.slice(0, 3)"
-              :key="item.pictureId"
-              class="intent-preview-item"
-              @click="goToDetail(item.pictureId)"
-            >
-              <el-image
-                v-if="item.pictureUrl"
-                :src="item.pictureThumbnailUrl || item.pictureUrl"
-                fit="cover"
-                class="intent-preview-img"
-              />
-              <div v-else class="intent-preview-placeholder">
-                <el-icon :size="20"><Picture /></el-icon>
-              </div>
-              <span class="intent-preview-title">{{ item.title }}</span>
-            </div>
-          </div>
+        <div class="intent-tags">
+          <el-tag v-if="result.intent.industry" type="primary" effect="plain">
+            行业：{{ result.intent.industry }}
+          </el-tag>
+          <el-tag v-if="result.intent.purpose" type="success" effect="plain">
+            用途：{{ result.intent.purpose }}
+          </el-tag>
+          <el-tag v-if="result.intent.scene" type="warning" effect="plain">
+            场景：{{ result.intent.scene }}
+          </el-tag>
+          <el-tag v-if="result.intent.style" type="danger" effect="plain">
+            风格：{{ result.intent.style }}
+          </el-tag>
         </div>
       </div>
 
@@ -226,17 +205,16 @@ const renderedAnswer = computed(() => {
   let text = result.value.answer
   // 把图片ID引用替换为缩略图链接
   const recs = result.value.recommendations || []
-  const urlMap = new Map<number, { url?: string; title?: string }>()
+  const urlMap = new Map<string, { url?: string; title?: string }>()
   for (const r of recs) {
     if (r.pictureId) urlMap.set(r.pictureId, { url: r.pictureThumbnailUrl || r.pictureUrl, title: r.title })
   }
   text = text.replace(/图片ID[：:]\s*(\d+)/g, (_, idStr) => {
-    const id = Number(idStr)
-    const info = urlMap.get(id)
+    const info = urlMap.get(idStr)
     if (info?.url) {
-      return `[![${info.title || '图片'}](${info.url})](/picture/${id})`
+      return `[![${info.title || '图片'}](${info.url})](/picture/${idStr})`
     }
-    return `[图片 #${id}](/picture/${id})`
+    return `[图片 #${idStr}](/picture/${idStr})`
   })
   return marked(text)
 })
@@ -298,7 +276,7 @@ const loadPictureUrls = async () => {
   await Promise.all(promises)
 }
 
-const goToDetail = (pictureId?: number) => {
+const goToDetail = (pictureId?: string) => {
   if (pictureId) {
     router.push(`/picture/${pictureId}`)
   }
@@ -346,58 +324,6 @@ const onAnswerClick = (e: MouseEvent) => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.intent-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.intent-preview {
-  display: flex;
-  gap: 10px;
-}
-
-.intent-preview-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.intent-preview-item:hover {
-  transform: translateY(-2px);
-}
-
-.intent-preview-img {
-  width: 64px;
-  height: 64px;
-  border-radius: 6px;
-  display: block;
-}
-
-.intent-preview-placeholder {
-  width: 64px;
-  height: 64px;
-  border-radius: 6px;
-  background: #f5f7fa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #c0c4cc;
-}
-
-.intent-preview-title {
-  font-size: 11px;
-  color: #909399;
-  max-width: 64px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .answer-card {

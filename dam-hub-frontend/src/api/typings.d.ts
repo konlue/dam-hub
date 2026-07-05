@@ -755,7 +755,7 @@ declare namespace API {
   }
 
   type AiSearchRecommendation = {
-    pictureId?: number
+    pictureId?: string
     title?: string
     category?: string
     score?: number
