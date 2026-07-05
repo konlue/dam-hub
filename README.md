@@ -111,6 +111,26 @@ dam-hub/
 
 启动后端后访问：http://localhost:8123/api/doc.html
 
+## 项目截图
+
+<!-- 在此替换为实际截图 -->
+
+### 首页
+
+![首页截图](./screenshots/homepage.jpeg)
+
+### 图片详情
+
+![图片详情截图](./screenshots/picture-detail.jpeg)
+
+### 空间管理
+
+![空间管理截图](./screenshots/space.jpeg)
+
+### 空间分析
+
+![空间分析截图](./screenshots/analyze.jpeg)
+
 ## 许可证
 
 本项目仅供交流学习使用。
