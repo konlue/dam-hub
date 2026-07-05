@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npm install *)",
       "Bash(npm run *)",
-      "Bash(mvn compile *)"
+      "Bash(mvn compile *)",
+      "Bash(python -c ' *)"
     ]
   }
 }

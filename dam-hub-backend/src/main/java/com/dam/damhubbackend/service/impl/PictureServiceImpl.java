@@ -15,6 +15,7 @@ import com.dam.damhubbackend.exception.BusinessException;
 import com.dam.damhubbackend.exception.ErrorCode;
 import com.dam.damhubbackend.exception.ThrowUtils;
 import com.dam.damhubbackend.manager.AIManager;
+import com.dam.damhubbackend.manager.PictureEmbeddingSync;
 import com.dam.damhubbackend.manager.CosManager;
 import com.dam.damhubbackend.manager.FileManager;
 import com.dam.damhubbackend.manager.upload.FilePictureUpload;
@@ -88,6 +89,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     @Resource
     private AIManager aiManager;
+
+    @Resource
+    private PictureEmbeddingSync pictureEmbeddingSync;
 
     @Override
     public void validPicture(Picture picture) {
@@ -222,7 +226,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         // this.clearPictureFile(oldPicture);
         // 公共图库且审核通过的图片，同步到 AI 向量库
         if (picture.getSpaceId() == null && PictureReviewStatusEnum.PASS.getValue() == picture.getReviewStatus()) {
-            syncEmbeddingAsync(picture);
+            pictureEmbeddingSync.syncEmbedding(picture);
         }
         return PictureVO.objToVo(picture);
     }
@@ -372,7 +376,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (PictureReviewStatusEnum.PASS.equals(reviewStatusEnum) && oldPicture.getSpaceId() == null) {
             Picture fullPicture = this.getById(id);
             if (fullPicture != null) {
-                syncEmbeddingAsync(fullPicture);
+                pictureEmbeddingSync.syncEmbedding(fullPicture);
             }
         }
     }
@@ -506,12 +510,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         });
         // 异步清理文件
         this.clearPictureFile(oldPicture);
-        // 从 AI 向量库删除
-        try {
-            aiManager.deleteEmbedding(pictureId);
-        } catch (Exception e) {
-            log.warn("AI 向量删除失败: pictureId={}", pictureId, e);
-        }
+        // 从 AI 向量库删除（异步，不阻塞主流程）
+        pictureEmbeddingSync.deleteEmbedding(pictureId);
     }
 
     @Override
@@ -540,7 +540,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (oldPicture.getSpaceId() == null && PictureReviewStatusEnum.PASS.getValue() == picture.getReviewStatus()) {
             Picture fullPicture = this.getById(id);
             if (fullPicture != null) {
-                syncEmbeddingAsync(fullPicture);
+                pictureEmbeddingSync.syncEmbedding(fullPicture);
             }
         }
     }
@@ -684,24 +684,6 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         } catch (Exception e) {
             log.error("名称解析错误", e);
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "名称解析错误");
-        }
-    }
-
-    /**
-     * 异步同步图片向量到 AI 服务
-     */
-    @Async
-    protected void syncEmbeddingAsync(Picture picture) {
-        try {
-            com.dam.damhubbackend.model.dto.ai.AIEmbeddingRequest req = new com.dam.damhubbackend.model.dto.ai.AIEmbeddingRequest();
-            req.setPictureId(picture.getId());
-            req.setTitle(picture.getName());
-            req.setTags(picture.getTags());
-            req.setCategory(picture.getCategory());
-            req.setDescription(picture.getIntroduction());
-            aiManager.addEmbedding(req);
-        } catch (Exception e) {
-            log.warn("AI 向量同步失败: pictureId={}", picture.getId(), e);
         }
     }
 }

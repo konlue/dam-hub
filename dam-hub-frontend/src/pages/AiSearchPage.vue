@@ -83,7 +83,7 @@
           </div>
           <div v-if="result?.recommendations?.length" class="intent-preview">
             <div
-              v-for="item in result.recommendations.slice(0, 4)"
+              v-for="item in result.recommendations.slice(0, 3)"
               :key="item.pictureId"
               class="intent-preview-item"
               @click="goToDetail(item.pictureId)"
