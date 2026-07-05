@@ -1,93 +1,119 @@
 <template>
   <div id="spaceManagePage">
-    <a-flex justify="space-between">
+    <div style="display: flex; justify-content: space-between; align-items: center">
       <h2>空间管理</h2>
-      <a-space>
-        <a-button type="primary" href="/add_space" target="_blank">+ 创建空间</a-button>
-        <a-button type="primary" ghost href="/space_analyze?queryPublic=1" target="_blank"
-          >分析公共图库</a-button
-        >
-        <a-button type="primary" ghost href="/space_analyze?queryAll=1" target="_blank"
-          >分析全部空间</a-button
-        >
-      </a-space>
-    </a-flex>
+      <div style="display: flex; gap: 8px">
+        <el-button type="primary" tag="a" href="/add_space" target="_blank">+ 创建空间</el-button>
+        <el-button type="primary" plain tag="a" href="/space_analyze?queryPublic=1" target="_blank">分析公共图库</el-button>
+        <el-button type="primary" plain tag="a" href="/space_analyze?queryAll=1" target="_blank">分析全部空间</el-button>
+      </div>
+    </div>
     <div style="margin-bottom: 16px" />
     <!-- 搜索表单 -->
-    <a-form layout="inline" :model="searchParams" @finish="doSearch">
-      <a-form-item label="空间名称">
-        <a-input v-model:value="searchParams.spaceName" placeholder="请输入空间名称" allow-clear />
-      </a-form-item>
-      <a-form-item name="spaceLevel" label="空间级别">
-        <a-select
-          v-model:value="searchParams.spaceLevel"
+    <el-form :inline="true" :model="searchParams" @submit.prevent="doSearch">
+      <el-form-item label="空间名称">
+        <el-input v-model="searchParams.spaceName" placeholder="请输入空间名称" clearable />
+      </el-form-item>
+      <el-form-item label="空间级别">
+        <el-select
+          v-model="searchParams.spaceLevel"
           style="min-width: 180px"
           placeholder="请选择空间级别"
-          :options="SPACE_LEVEL_OPTIONS"
-          allow-clear
-        />
-      </a-form-item>
-      <a-form-item label="空间类别" name="spaceType">
-        <a-select
-          v-model:value="searchParams.spaceType"
-          :options="SPACE_TYPE_OPTIONS"
-          placeholder="请输入空间类别"
+          clearable
+        >
+          <el-option
+            v-for="item in SPACE_LEVEL_OPTIONS"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="空间类别">
+        <el-select
+          v-model="searchParams.spaceType"
           style="min-width: 180px"
-          allow-clear
-        />
-      </a-form-item>
-      <a-form-item label="用户 id">
-        <a-input v-model:value="searchParams.userId" placeholder="请输入用户 id" allow-clear />
-      </a-form-item>
-      <a-form-item>
-        <a-button type="primary" html-type="submit">搜索</a-button>
-      </a-form-item>
-    </a-form>
+          placeholder="请输入空间类别"
+          clearable
+        >
+          <el-option
+            v-for="item in SPACE_TYPE_OPTIONS"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="用户 id">
+        <el-input v-model="searchParams.userId" placeholder="请输入用户 id" clearable />
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="doSearch">搜索</el-button>
+      </el-form-item>
+    </el-form>
     <div style="margin-bottom: 16px" />
     <!-- 表格 -->
-    <a-table
-      :columns="columns"
-      :data-source="dataList"
-      :pagination="pagination"
-      @change="doTableChange"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'spaceLevel'">
-          <div>{{ SPACE_LEVEL_MAP[record.spaceLevel] }}</div>
+    <el-table :data="dataList" stripe>
+      <el-table-column prop="id" label="id" width="80" />
+      <el-table-column prop="spaceName" label="空间名称" />
+      <el-table-column label="空间级别">
+        <template #default="{ row }">
+          {{ SPACE_LEVEL_MAP[row.spaceLevel] }}
         </template>
-        <!-- 空间类别 -->
-        <template v-if="column.dataIndex === 'spaceType'">
-          <a-tag>{{ SPACE_TYPE_MAP[record.spaceType] }}</a-tag>
+      </el-table-column>
+      <el-table-column label="空间类别">
+        <template #default="{ row }">
+          <el-tag>{{ SPACE_TYPE_MAP[row.spaceType] }}</el-tag>
         </template>
-        <template v-if="column.dataIndex === 'spaceUseInfo'">
-          <div>大小：{{ formatSize(record.totalSize) }} / {{ formatSize(record.maxSize) }}</div>
-          <div>数量：{{ record.totalCount }} / {{ record.maxCount }}</div>
+      </el-table-column>
+      <el-table-column label="使用情况" width="200">
+        <template #default="{ row }">
+          <div>大小：{{ formatSize(row.totalSize) }} / {{ formatSize(row.maxSize) }}</div>
+          <div>数量：{{ row.totalCount }} / {{ row.maxCount }}</div>
         </template>
-        <template v-if="column.dataIndex === 'createTime'">
-          {{ dayjs(record.createTime).format('YYYY-MM-DD HH:mm:ss') }}
+      </el-table-column>
+      <el-table-column prop="userId" label="用户 id" width="80" />
+      <el-table-column label="创建时间" width="160">
+        <template #default="{ row }">
+          {{ dayjs(row.createTime).format('YYYY-MM-DD HH:mm:ss') }}
         </template>
-        <template v-if="column.dataIndex === 'editTime'">
-          {{ dayjs(record.editTime).format('YYYY-MM-DD HH:mm:ss') }}
+      </el-table-column>
+      <el-table-column label="编辑时间" width="160">
+        <template #default="{ row }">
+          {{ dayjs(row.editTime).format('YYYY-MM-DD HH:mm:ss') }}
         </template>
-        <template v-else-if="column.key === 'action'">
-          <a-space wrap>
-            <a-button type="link" :href="`/space_analyze?spaceId=${record.id}`" target="_blank">
+      </el-table-column>
+      <el-table-column label="操作" width="200" fixed="right">
+        <template #default="{ row }">
+          <div style="display: flex; gap: 4px">
+            <el-button type="primary" link size="small" tag="a" :href="`/space_analyze?spaceId=${row.id}`" target="_blank">
               分析
-            </a-button>
-            <a-button type="link" :href="`/add_space?id=${record.id}`" target="_blank">
+            </el-button>
+            <el-button type="primary" link size="small" tag="a" :href="`/add_space?id=${row.id}`" target="_blank">
               编辑
-            </a-button>
-            <a-button danger @click="doDelete(record.id)">删除</a-button>
-          </a-space>
+            </el-button>
+            <el-button type="danger" size="small" @click="doDelete(row.id)">删除</el-button>
+          </div>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <div style="margin-top: 16px; text-align: right">
+      <el-pagination
+        v-model:current-page="searchParams.current"
+        v-model:page-size="searchParams.pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50]"
+        layout="total, sizes, prev, pager, next, jumper"
+        @current-change="onPageChange"
+        @size-change="onSizeChange"
+      />
+    </div>
   </div>
 </template>
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { deleteSpaceUsingPost, listSpaceByPageUsingPost } from '@/api/spaceController.ts'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
 import {
   SPACE_LEVEL_MAP,
@@ -97,52 +123,9 @@ import {
 } from '../../constants/space.ts'
 import { formatSize } from '../../utils'
 
-const columns = [
-  {
-    title: 'id',
-    dataIndex: 'id',
-    width: 80,
-  },
-  {
-    title: '空间名称',
-    dataIndex: 'spaceName',
-  },
-  {
-    title: '空间级别',
-    dataIndex: 'spaceLevel',
-  },
-  {
-    title: '空间类别',
-    dataIndex: 'spaceType',
-  },
-  {
-    title: '使用情况',
-    dataIndex: 'spaceUseInfo',
-  },
-  {
-    title: '用户 id',
-    dataIndex: 'userId',
-    width: 80,
-  },
-  {
-    title: '创建时间',
-    dataIndex: 'createTime',
-  },
-  {
-    title: '编辑时间',
-    dataIndex: 'editTime',
-  },
-  {
-    title: '操作',
-    key: 'action',
-  },
-]
-
-// 定义数据
 const dataList = ref<API.Space[]>([])
 const total = ref(0)
 
-// 搜索条件
 const searchParams = reactive<API.SpaceQueryRequest>({
   current: 1,
   pageSize: 10,
@@ -150,7 +133,6 @@ const searchParams = reactive<API.SpaceQueryRequest>({
   sortOrder: 'descend',
 })
 
-// 获取数据
 const fetchData = async () => {
   const res = await listSpaceByPageUsingPost({
     ...searchParams,
@@ -159,52 +141,40 @@ const fetchData = async () => {
     dataList.value = res.data.data.records ?? []
     total.value = res.data.data.total ?? 0
   } else {
-    message.error('获取数据失败，' + res.data.message)
+    ElMessage.error('获取数据失败，' + res.data.message)
   }
 }
 
-// 页面加载时获取数据，请求一次
 onMounted(() => {
   fetchData()
 })
 
-// 分页参数
-const pagination = computed(() => {
-  return {
-    current: searchParams.current,
-    pageSize: searchParams.pageSize,
-    total: total.value,
-    showSizeChanger: true,
-    showTotal: (total) => `共 ${total} 条`,
-  }
-})
-
-// 表格变化之后，重新获取数据
-const doTableChange = (page: any) => {
-  searchParams.current = page.current
-  searchParams.pageSize = page.pageSize
+const onPageChange = (page: number) => {
+  searchParams.current = page
   fetchData()
 }
 
-// 搜索数据
-const doSearch = () => {
-  // 重置页码
+const onSizeChange = (size: number) => {
+  searchParams.pageSize = size
   searchParams.current = 1
   fetchData()
 }
 
-// 删除数据
+const doSearch = () => {
+  searchParams.current = 1
+  fetchData()
+}
+
 const doDelete = async (id: string) => {
   if (!id) {
     return
   }
   const res = await deleteSpaceUsingPost({ id })
   if (res.data.code === 0) {
-    message.success('删除成功')
-    // 刷新数据
+    ElMessage.success('删除成功')
     fetchData()
   } else {
-    message.error('删除失败')
+    ElMessage.error('删除失败')
   }
 }
 </script>

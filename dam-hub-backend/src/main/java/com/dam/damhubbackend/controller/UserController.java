@@ -13,6 +13,10 @@ import com.dam.damhubbackend.exception.ThrowUtils;
 import com.dam.damhubbackend.model.dto.user.*;
 import com.dam.damhubbackend.model.dto.user.*;
 import com.dam.damhubbackend.model.entity.User;
+import com.dam.damhubbackend.manager.CosManager;
+import com.dam.damhubbackend.config.CosClientConfig;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.multipart.MultipartFile;
 import com.dam.damhubbackend.model.vo.LoginUserVO;
 import com.dam.damhubbackend.model.vo.UserVO;
 import com.dam.damhubbackend.service.UserService;
@@ -21,14 +25,22 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.io.File;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/user")
 public class UserController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private CosManager cosManager;
+
+    @Resource
+    private CosClientConfig cosClientConfig;
 
     /**
      * 用户注册
@@ -175,6 +187,86 @@ public class UserController {
         // 调用 service 层的方法进行会员兑换
         boolean result = userService.exchangeVip(loginUser, vipCode);
         return ResultUtils.success(result);
+    }
+
+    /**
+     * 用户修改个人信息
+     */
+    @PostMapping("/update/my")
+    public BaseResponse<Boolean> updateMyUser(@RequestBody UserUpdateMyRequest userUpdateMyRequest,
+                                              HttpServletRequest request) {
+        ThrowUtils.throwIf(userUpdateMyRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        User updateUser = new User();
+        updateUser.setId(loginUser.getId());
+        updateUser.setUserName(userUpdateMyRequest.getUserName());
+        updateUser.setUserAvatar(userUpdateMyRequest.getUserAvatar());
+        updateUser.setUserProfile(userUpdateMyRequest.getUserProfile());
+        boolean result = userService.updateById(updateUser);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(true);
+    }
+
+    /**
+     * 用户上传头像
+     */
+    @PostMapping("/upload/avatar")
+    public BaseResponse<String> uploadAvatar(@RequestPart("file") MultipartFile multipartFile,
+                                             HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        ThrowUtils.throwIf(multipartFile == null || multipartFile.isEmpty(), ErrorCode.PARAMS_ERROR, "请选择头像图片");
+        String originalFilename = multipartFile.getOriginalFilename();
+        String suffix = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : ".jpg";
+        ThrowUtils.throwIf(multipartFile.getSize() > 2 * 1024 * 1024, ErrorCode.PARAMS_ERROR, "头像图片不能超过 2MB");
+        File file = null;
+        try {
+            String filepath = String.format("/avatar/%d_%d%s", loginUser.getId(), System.currentTimeMillis(), suffix);
+            file = File.createTempFile("avatar", suffix);
+            multipartFile.transferTo(file);
+            cosManager.putObject(filepath, file);
+            String url = cosClientConfig.getHost() + "/" + filepath;
+            return ResultUtils.success(url);
+        } catch (Exception e) {
+            log.error("头像上传失败", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "头像上传失败");
+        } finally {
+            if (file != null) {
+                boolean delete = file.delete();
+                if (!delete) {
+                    log.error("临时文件删除失败");
+                }
+            }
+        }
+    }
+
+    /**
+     * 用户修改密码
+     */
+    @PostMapping("/update/password")
+    public BaseResponse<Boolean> changePassword(@RequestBody UserChangePasswordRequest userChangePasswordRequest,
+                                                HttpServletRequest request) {
+        ThrowUtils.throwIf(userChangePasswordRequest == null, ErrorCode.PARAMS_ERROR);
+        String oldPassword = userChangePasswordRequest.getOldPassword();
+        String newPassword = userChangePasswordRequest.getNewPassword();
+        String checkPassword = userChangePasswordRequest.getCheckPassword();
+        ThrowUtils.throwIf(oldPassword == null || newPassword == null || checkPassword == null,
+                ErrorCode.PARAMS_ERROR, "密码不能为空");
+        ThrowUtils.throwIf(!newPassword.equals(checkPassword),
+                ErrorCode.PARAMS_ERROR, "两次输入的新密码不一致");
+        ThrowUtils.throwIf(newPassword.length() < 8,
+                ErrorCode.PARAMS_ERROR, "新密码长度不能少于 8 位");
+        User loginUser = userService.getLoginUser(request);
+        // 验证旧密码
+        String encryptOldPassword = userService.getEncryptPassword(oldPassword);
+        ThrowUtils.throwIf(!encryptOldPassword.equals(loginUser.getUserPassword()),
+                ErrorCode.PARAMS_ERROR, "旧密码错误");
+        // 更新密码
+        User updateUser = new User();
+        updateUser.setId(loginUser.getId());
+        updateUser.setUserPassword(userService.getEncryptPassword(newPassword));
+        boolean result = userService.updateById(updateUser);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(true);
     }
 
 }

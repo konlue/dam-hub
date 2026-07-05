@@ -705,6 +705,18 @@ declare namespace API {
     userRole?: string
   }
 
+  type UserUpdateMyRequest = {
+    userAvatar?: string
+    userName?: string
+    userProfile?: string
+  }
+
+  type UserChangePasswordRequest = {
+    oldPassword?: string
+    newPassword?: string
+    checkPassword?: string
+  }
+
   type UserVO = {
     createTime?: string
     id?: number
@@ -720,5 +732,49 @@ declare namespace API {
 
   type VipExchangeRequest = {
     vipCode?: string
+  }
+
+  type AiSearchRequest = {
+    query?: string
+    topK?: number
+    spaceId?: number
+    category?: string
+    color?: string
+  }
+
+  type AiSearchIntent = {
+    industry?: string
+    purpose?: string
+    scene?: string
+    style?: string
+  }
+
+  type AiSearchTask = {
+    type?: string
+    query?: string
+  }
+
+  type AiSearchRecommendation = {
+    pictureId?: number
+    title?: string
+    category?: string
+    score?: number
+    taskType?: string
+    reason?: string
+    pictureUrl?: string
+    pictureThumbnailUrl?: string
+  }
+
+  type AiSearchResponse = {
+    intent?: AiSearchIntent
+    tasks?: AiSearchTask[]
+    recommendations?: AiSearchRecommendation[]
+    answer?: string
+  }
+
+  type BaseResponseAiSearchResponse_ = {
+    code?: number
+    data?: AiSearchResponse
+    message?: string
   }
 }

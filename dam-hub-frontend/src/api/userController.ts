@@ -149,3 +149,48 @@ export async function updateUserUsingPost(
     ...(options || {}),
   })
 }
+
+/** updateMyUser POST /api/user/update/my */
+export async function updateMyUserUsingPost(
+  body: API.UserUpdateMyRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBoolean_>('/api/user/update/my', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** uploadAvatar POST /api/user/upload/avatar */
+export async function uploadAvatarUsingPost(
+  body: {},
+  file: File,
+  options?: { [key: string]: any }
+) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request<API.BaseResponseString_>('/api/user/upload/avatar', {
+    method: 'POST',
+    data: formData,
+    ...(options || {}),
+  })
+}
+
+/** changePassword POST /api/user/update/password */
+export async function changePasswordUsingPost(
+  body: API.UserChangePasswordRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBoolean_>('/api/user/update/password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}

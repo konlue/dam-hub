@@ -2,60 +2,58 @@
   <div id="userLoginPage">
     <h2 class="title">企业图素中台 - 用户登录</h2>
     <div class="desc">企业图素中台</div>
-    <a-form :model="formState" name="basic" autocomplete="off" @finish="handleSubmit">
-      <a-form-item name="userAccount" :rules="[{ required: true, message: '请输入账号' }]">
-        <a-input v-model:value="formState.userAccount" placeholder="请输入账号" />
-      </a-form-item>
-      <a-form-item
-        name="userPassword"
+    <el-form :model="formState" ref="formRef" autocomplete="off" @submit.prevent="handleSubmit">
+      <el-form-item
+        prop="userAccount"
+        :rules="[{ required: true, message: '请输入账号', trigger: 'blur' }]"
+      >
+        <el-input v-model="formState.userAccount" placeholder="请输入账号" />
+      </el-form-item>
+      <el-form-item
+        prop="userPassword"
         :rules="[
-          { required: true, message: '请输入密码' },
-          { min: 8, message: '密码长度不能小于 8 位' },
+          { required: true, message: '请输入密码', trigger: 'blur' },
+          { min: 8, message: '密码长度不能小于 8 位', trigger: 'blur' },
         ]"
       >
-        <a-input-password v-model:value="formState.userPassword" placeholder="请输入密码" />
-      </a-form-item>
+        <el-input v-model="formState.userPassword" type="password" show-password placeholder="请输入密码" />
+      </el-form-item>
       <div class="tips">
         没有账号？
         <RouterLink to="/user/register">去注册</RouterLink>
       </div>
-      <a-form-item>
-        <a-button type="primary" html-type="submit" style="width: 100%">登录</a-button>
-      </a-form-item>
-    </a-form>
+      <el-form-item>
+        <el-button type="primary" native-type="submit" style="width: 100%">登录</el-button>
+      </el-form-item>
+    </el-form>
   </div>
 </template>
 <script lang="ts" setup>
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { userLoginUsingPost } from '@/api/userController.ts'
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
-import { message } from 'ant-design-vue'
-import router from '@/router' // 用于接受表单输入的值
+import { ElMessage } from 'element-plus'
+import router from '@/router'
 
-// 用于接受表单输入的值
 const formState = reactive<API.UserLoginRequest>({
   userAccount: '',
   userPassword: '',
 })
 
+const formRef = ref()
 const loginUserStore = useLoginUserStore()
 
-/**
- * 提交表单
- * @param values
- */
-const handleSubmit = async (values: any) => {
-  const res = await userLoginUsingPost(values)
-  // 登录成功，把登录态保存到全局状态中
+const handleSubmit = async () => {
+  const res = await userLoginUsingPost(formState)
   if (res.data.code === 0 && res.data.data) {
     await loginUserStore.fetchLoginUser()
-    message.success('登录成功')
+    ElMessage.success('登录成功')
     router.push({
       path: '/',
       replace: true,
     })
   } else {
-    message.error('登录失败，' + res.data.message)
+    ElMessage.error('登录失败，' + res.data.message)
   }
 }
 </script>

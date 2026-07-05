@@ -15,6 +15,8 @@ import SearchPicturePage from '@/pages/SearchPicturePage.vue'
 import SpaceAnalyzePage from '@/pages/SpaceAnalyzePage.vue'
 import SpaceUserManagePage from '@/pages/admin/SpaceUserManagePage.vue'
 import UserExchangeVipPage from '@/pages/UserExchangeVipPage.vue'
+import AiSearchPage from '@/pages/AiSearchPage.vue'
+import UserProfilePage from '@/pages/UserProfilePage.vue'
 
 
 const router = createRouter({
@@ -102,6 +104,16 @@ const router = createRouter({
       path: '/user_exchange_vip',
       name: '用户兑换会员',
       component: UserExchangeVipPage,
+    },
+    {
+      path: '/ai_search',
+      name: 'AI 搜图',
+      component: AiSearchPage,
+    },
+    {
+      path: '/user/profile',
+      name: '个人中心',
+      component: UserProfilePage,
     },
     {
       path: '/about',

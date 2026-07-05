@@ -8,7 +8,7 @@ server:
         max-age: 2592000
 spring:
   profiles:
-    active: dev
+    active: dev,ai
   application:
     name: dam-hub-backend
   # 数据库配置

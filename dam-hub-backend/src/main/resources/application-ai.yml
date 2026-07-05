@@ -1,0 +1,13 @@
+# ===== AI 服务配置（新增） =====
+# 复制到 src/main/resources/ 并在 application.yml 中引入
+
+ai:
+  service:
+    url: http://localhost:8000
+
+# RestTemplate Bean 配置（如果项目中已有则不需要）
+# 在 Spring Boot 启动类或配置类中添加：
+# @Bean
+# public RestTemplate restTemplate() {
+#     return new RestTemplate();
+# }

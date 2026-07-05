@@ -1,110 +1,145 @@
 <template>
   <div id="globalSider">
-    <a-layout-sider
-      v-if="loginUserStore.loginUser.id"
-      width="200"
-      breakpoint="lg"
-      collapsed-width="0"
-    >
-      <a-menu
-        v-model:selectedKeys="current"
-        mode="inline"
-        :items="menuItems"
-        @click="doMenuClick"
-      />
-    </a-layout-sider>
+    <div v-if="loginUserStore.loginUser.id" class="sider-container">
+      <el-menu
+        :default-active="current"
+        mode="vertical"
+        @select="doMenuClick"
+        class="sider-menu"
+      >
+        <el-menu-item index="/">
+          <el-icon><HomeFilled /></el-icon>
+          <span>主页</span>
+        </el-menu-item>
+        <el-menu-item index="/add_picture">
+          <el-icon><Plus /></el-icon>
+          <span>创建图片</span>
+        </el-menu-item>
+        <el-menu-item index="/ai_search">
+          <el-icon><Search /></el-icon>
+          <span>AI 搜图</span>
+        </el-menu-item>
+
+        <div class="menu-divider"></div>
+
+        <el-menu-item index="/my_space">
+          <el-icon><User /></el-icon>
+          <span>我的空间</span>
+        </el-menu-item>
+        <el-menu-item :index="'/add_space?type=' + SPACE_TYPE_ENUM.TEAM">
+          <el-icon><UserFilled /></el-icon>
+          <span>创建团队</span>
+        </el-menu-item>
+
+        <template v-if="teamSpaceList.length > 0">
+          <div class="menu-group-title">我的团队</div>
+          <el-menu-item
+            v-for="spaceUser in teamSpaceList"
+            :key="spaceUser.spaceId"
+            :index="'/space/' + spaceUser.spaceId"
+          >
+            <el-icon><Folder /></el-icon>
+            <span>{{ spaceUser.space?.spaceName }}</span>
+          </el-menu-item>
+        </template>
+
+        <template v-if="loginUserStore.loginUser.userRole === 'admin'">
+          <div class="menu-divider"></div>
+          <div class="menu-group-title">管理</div>
+          <el-menu-item index="/admin/userManage">
+            <el-icon><UserFilled /></el-icon>
+            <span>用户管理</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/pictureManage">
+            <el-icon><Picture /></el-icon>
+            <span>图片管理</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/spaceManage">
+            <el-icon><Grid /></el-icon>
+            <span>空间管理</span>
+          </el-menu-item>
+        </template>
+      </el-menu>
+    </div>
   </div>
 </template>
 <script lang="ts" setup>
-import { computed, h, ref, watchEffect } from 'vue'
-import { PictureOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons-vue'
+import { ref, watchEffect } from 'vue'
+import { Picture, User, UserFilled, HomeFilled, Plus, Search, Folder, Grid } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
 import { SPACE_TYPE_ENUM } from '@/constants/space.ts'
 import { listMyTeamSpaceUsingPost } from '@/api/spaceUserController.ts'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 
 const loginUserStore = useLoginUserStore()
 
-// 固定的菜单列表
-const fixedMenuItems = [
-  {
-    key: '/',
-    icon: () => h(PictureOutlined),
-    label: '公共图库',
-  },
-  {
-    key: '/my_space',
-    label: '我的空间',
-    icon: () => h(UserOutlined),
-  },
-  {
-    key: '/add_space?type=' + SPACE_TYPE_ENUM.TEAM,
-    label: '创建团队',
-    icon: () => h(TeamOutlined),
-  },
-]
-
 const teamSpaceList = ref<API.SpaceUserVO[]>([])
-const menuItems = computed(() => {
-  // 如果用户没有团队空间，则只展示固定菜单
-  if (teamSpaceList.value.length < 1) {
-    return fixedMenuItems
-  }
-  // 如果用户有团队空间，则展示固定菜单和团队空间菜单
-  // 展示团队空间分组
-  const teamSpaceSubMenus = teamSpaceList.value.map((spaceUser) => {
-    const space = spaceUser.space
-    return {
-      key: '/space/' + spaceUser.spaceId,
-      label: space?.spaceName,
-    }
-  })
-  const teamSpaceMenuGroup = {
-    type: 'group',
-    label: '我的团队',
-    key: 'teamSpace',
-    children: teamSpaceSubMenus,
-  }
-  return [...fixedMenuItems, teamSpaceMenuGroup]
-})
 
-// 加载团队空间列表
 const fetchTeamSpaceList = async () => {
   const res = await listMyTeamSpaceUsingPost()
   if (res.data.code === 0 && res.data.data) {
     teamSpaceList.value = res.data.data
   } else {
-    message.error('加载我的团队空间失败，' + res.data.message)
+    ElMessage.error('加载我的团队空间失败，' + res.data.message)
   }
 }
 
-/**
- * 监听变量，改变时触发数据的重新加载
- */
 watchEffect(() => {
-  // 登录才加载
   if (loginUserStore.loginUser.id) {
     fetchTeamSpaceList()
   }
 })
 
 const router = useRouter()
-// 当前要高亮的菜单项
-const current = ref<string[]>([])
-// 监听路由变化，更新高亮菜单项
-router.afterEach((to, from, next) => {
-  current.value = [to.path]
+const current = ref<string>('/')
+router.afterEach((to) => {
+  current.value = to.path
 })
 
-// 路由跳转事件
-const doMenuClick = ({ key }) => {
+const doMenuClick = (key: string) => {
   router.push(key)
 }
 </script>
 
 <style scoped>
-#globalSider .ant-layout-sider {
-  background: none;
+#globalSider .sider-container {
+  min-width: 200px;
+  padding: 0 8px;
+}
+
+#globalSider .sider-menu {
+  border-right: none;
+  background: transparent;
+}
+
+.menu-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, #d0c4f0, transparent);
+  margin: 8px 16px;
+}
+
+.menu-group-title {
+  font-size: 11px;
+  color: #9b8ec4;
+  padding: 8px 20px 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+:deep(.el-menu-item) {
+  border-radius: 8px;
+  margin: 2px 0;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-menu-item:hover) {
+  background: rgba(107, 70, 193, 0.08);
+}
+
+:deep(.el-menu-item.is-active) {
+  background: linear-gradient(135deg, rgba(107, 70, 193, 0.12), rgba(139, 92, 246, 0.08));
+  color: #6b46c1;
+  font-weight: 600;
 }
 </style>

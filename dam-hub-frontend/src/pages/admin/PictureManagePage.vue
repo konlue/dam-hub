@@ -1,122 +1,157 @@
 <template>
   <div id="pictureManagePage">
-    <a-flex justify="space-between">
+    <div style="display: flex; justify-content: space-between; align-items: center">
       <h2>图片管理</h2>
-      <a-space>
-        <a-button type="primary" href="/add_picture" target="_blank">+ 创建图片</a-button>
-        <a-button type="primary" href="/add_picture/batch" target="_blank" ghost>+ 批量创建图片</a-button>
-      </a-space>
-    </a-flex>
+      <div style="display: flex; gap: 8px">
+        <el-button type="primary" tag="a" href="/add_picture" target="_blank">+ 创建图片</el-button>
+        <el-button type="primary" plain tag="a" href="/add_picture/batch" target="_blank">+ 批量创建图片</el-button>
+      </div>
+    </div>
     <div style="margin-bottom: 16px" />
     <!-- 搜索表单 -->
-    <a-form layout="inline" :model="searchParams" @finish="doSearch">
-      <a-form-item label="关键词">
-        <a-input
-          v-model:value="searchParams.searchText"
+    <el-form :inline="true" :model="searchParams" @submit.prevent="doSearch">
+      <el-form-item label="关键词">
+        <el-input
+          v-model="searchParams.searchText"
           placeholder="从名称和简介搜索"
-          allow-clear
+          clearable
         />
-      </a-form-item>
-      <a-form-item label="类型">
-        <a-input v-model:value="searchParams.category" placeholder="请输入类型" allow-clear />
-      </a-form-item>
-      <a-form-item label="标签">
-        <a-select
-          v-model:value="searchParams.tags"
-          mode="tags"
+      </el-form-item>
+      <el-form-item label="类型">
+        <el-input v-model="searchParams.category" placeholder="请输入类型" clearable />
+      </el-form-item>
+      <el-form-item label="标签">
+        <el-select
+          v-model="searchParams.tags"
+          multiple
+          filterable
+          allow-create
           placeholder="请输入标签"
           style="min-width: 180px"
-          allow-clear
+          clearable
         />
-      </a-form-item>
-      <a-form-item name="reviewStatus" label="审核状态">
-        <a-select
-          v-model:value="searchParams.reviewStatus"
+      </el-form-item>
+      <el-form-item label="审核状态">
+        <el-select
+          v-model="searchParams.reviewStatus"
           style="min-width: 180px"
           placeholder="请选择审核状态"
-          :options="PIC_REVIEW_STATUS_OPTIONS"
-          allow-clear
-        />
-      </a-form-item>
-      <a-form-item>
-        <a-button type="primary" html-type="submit">搜索</a-button>
-      </a-form-item>
-    </a-form>
+          clearable
+        >
+          <el-option
+            v-for="item in PIC_REVIEW_STATUS_OPTIONS"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="doSearch">搜索</el-button>
+      </el-form-item>
+    </el-form>
     <div style="margin-bottom: 16px" />
     <!-- 表格 -->
-    <a-table
-      :columns="columns"
-      :data-source="dataList"
-      :pagination="pagination"
-      @change="doTableChange"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'url'">
-          <a-image :src="record.url" :width="120" />
+    <el-table :data="dataList" stripe>
+      <el-table-column prop="id" label="id" width="80" />
+      <el-table-column label="图片" width="140">
+        <template #default="{ row }">
+          <el-image :src="row.url" style="width: 120px" />
         </template>
-        <template v-if="column.dataIndex === 'tags'">
-          <a-space wrap>
-            <a-tag v-for="tag in JSON.parse(record.tags || '[]')" :key="tag">
+      </el-table-column>
+      <el-table-column prop="name" label="名称" />
+      <el-table-column prop="introduction" label="简介" show-overflow-tooltip />
+      <el-table-column prop="category" label="类型" />
+      <el-table-column label="标签">
+        <template #default="{ row }">
+          <div style="display: flex; flex-wrap: wrap; gap: 4px">
+            <el-tag v-for="tag in JSON.parse(row.tags || '[]')" :key="tag" size="small">
               {{ tag }}
-            </a-tag>
-          </a-space>
-        </template>
-        <template v-if="column.dataIndex === 'picInfo'">
-          <div>格式：{{ record.picFormat }}</div>
-          <div>宽度：{{ record.picWidth }}</div>
-          <div>高度：{{ record.picHeight }}</div>
-          <div>宽高比：{{ record.picScale }}</div>
-          <div>大小：{{ (record.picSize / 1024).toFixed(2) }}KB</div>
-        </template>
-        <template v-if="column.dataIndex === 'reviewMessage'">
-          <div>审核状态：{{ PIC_REVIEW_STATUS_MAP[record.reviewStatus] }}</div>
-          <div>审核信息：{{ record.reviewMessage }}</div>
-          <div>审核人：{{ record.reviewerId }}</div>
-          <div v-if="record.reviewTime">
-            审核时间：{{ dayjs(record.reviewTime).format('YYYY-MM-DD HH:mm:ss') }}
+            </el-tag>
           </div>
         </template>
-        <template v-if="column.dataIndex === 'createTime'">
-          {{ dayjs(record.createTime).format('YYYY-MM-DD HH:mm:ss') }}
+      </el-table-column>
+      <el-table-column label="图片信息" width="160">
+        <template #default="{ row }">
+          <div>格式：{{ row.picFormat }}</div>
+          <div>宽度：{{ row.picWidth }}</div>
+          <div>高度：{{ row.picHeight }}</div>
+          <div>宽高比：{{ row.picScale }}</div>
+          <div>大小：{{ (row.picSize / 1024).toFixed(2) }}KB</div>
         </template>
-        <template v-if="column.dataIndex === 'editTime'">
-          {{ dayjs(record.editTime).format('YYYY-MM-DD HH:mm:ss') }}
+      </el-table-column>
+      <el-table-column prop="userId" label="用户 id" width="80" />
+      <el-table-column prop="spaceId" label="空间 id" width="80" />
+      <el-table-column label="审核信息" width="180">
+        <template #default="{ row }">
+          <div>审核状态：{{ PIC_REVIEW_STATUS_MAP[row.reviewStatus] }}</div>
+          <div>审核信息：{{ row.reviewMessage }}</div>
+          <div>审核人：{{ row.reviewerId }}</div>
+          <div v-if="row.reviewTime">
+            审核时间：{{ dayjs(row.reviewTime).format('YYYY-MM-DD HH:mm:ss') }}
+          </div>
         </template>
-        <template v-else-if="column.key === 'action'">
-          <a-space wrap>
-            <a-button
-              v-if="record.reviewStatus !== PIC_REVIEW_STATUS_ENUM.PASS"
-              type="link"
-              @click="handleReview(record, PIC_REVIEW_STATUS_ENUM.PASS)"
+      </el-table-column>
+      <el-table-column label="创建时间" width="160">
+        <template #default="{ row }">
+          {{ dayjs(row.createTime).format('YYYY-MM-DD HH:mm:ss') }}
+        </template>
+      </el-table-column>
+      <el-table-column label="编辑时间" width="160">
+        <template #default="{ row }">
+          {{ dayjs(row.editTime).format('YYYY-MM-DD HH:mm:ss') }}
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="240" fixed="right">
+        <template #default="{ row }">
+          <div style="display: flex; gap: 4px">
+            <el-button
+              v-if="row.reviewStatus !== PIC_REVIEW_STATUS_ENUM.PASS"
+              type="primary"
+              link
+              size="small"
+              @click="handleReview(row, PIC_REVIEW_STATUS_ENUM.PASS)"
             >
               通过
-            </a-button>
-            <a-button
-              v-if="record.reviewStatus !== PIC_REVIEW_STATUS_ENUM.REJECT"
-              type="link"
-              danger
-              @click="handleReview(record, PIC_REVIEW_STATUS_ENUM.REJECT)"
+            </el-button>
+            <el-button
+              v-if="row.reviewStatus !== PIC_REVIEW_STATUS_ENUM.REJECT"
+              type="danger"
+              link
+              size="small"
+              @click="handleReview(row, PIC_REVIEW_STATUS_ENUM.REJECT)"
             >
               拒绝
-            </a-button>
-            <a-button type="link" :href="`/add_picture?id=${record.id}`" target="_blank">
+            </el-button>
+            <el-button type="primary" link size="small" tag="a" :href="`/add_picture?id=${row.id}`" target="_blank">
               编辑
-            </a-button>
-            <a-button danger @click="doDelete(record.id)">删除</a-button>
-          </a-space>
+            </el-button>
+            <el-button type="danger" size="small" @click="doDelete(row.id)">删除</el-button>
+          </div>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <div style="margin-top: 16px; text-align: right">
+      <el-pagination
+        v-model:current-page="searchParams.current"
+        v-model:page-size="searchParams.pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50]"
+        layout="total, sizes, prev, pager, next, jumper"
+        @current-change="onPageChange"
+        @size-change="onSizeChange"
+      />
+    </div>
   </div>
 </template>
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import {
   deletePictureUsingPost,
   doPictureReviewUsingPost,
   listPictureByPageUsingPost,
 } from '@/api/pictureController.ts'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import {
   PIC_REVIEW_STATUS_ENUM,
   PIC_REVIEW_STATUS_MAP,
@@ -124,70 +159,9 @@ import {
 } from '../../constants/picture.ts'
 import dayjs from 'dayjs'
 
-const columns = [
-  {
-    title: 'id',
-    dataIndex: 'id',
-    width: 80,
-  },
-  {
-    title: '图片',
-    dataIndex: 'url',
-  },
-  {
-    title: '名称',
-    dataIndex: 'name',
-  },
-  {
-    title: '简介',
-    dataIndex: 'introduction',
-    ellipsis: true,
-  },
-  {
-    title: '类型',
-    dataIndex: 'category',
-  },
-  {
-    title: '标签',
-    dataIndex: 'tags',
-  },
-  {
-    title: '图片信息',
-    dataIndex: 'picInfo',
-  },
-  {
-    title: '用户 id',
-    dataIndex: 'userId',
-    width: 80,
-  },
-  {
-    title: '空间 id',
-    dataIndex: 'spaceId',
-    width: 80,
-  },
-  {
-    title: '审核信息',
-    dataIndex: 'reviewMessage',
-  },
-  {
-    title: '创建时间',
-    dataIndex: 'createTime',
-  },
-  {
-    title: '编辑时间',
-    dataIndex: 'editTime',
-  },
-  {
-    title: '操作',
-    key: 'action',
-  },
-]
-
-// 定义数据
 const dataList = ref<API.Picture[]>([])
 const total = ref(0)
 
-// 搜索条件
 const searchParams = reactive<API.PictureQueryRequest>({
   current: 1,
   pageSize: 10,
@@ -195,7 +169,6 @@ const searchParams = reactive<API.PictureQueryRequest>({
   sortOrder: 'descend',
 })
 
-// 获取数据
 const fetchData = async () => {
   const res = await listPictureByPageUsingPost({
     ...searchParams,
@@ -205,56 +178,43 @@ const fetchData = async () => {
     dataList.value = res.data.data.records ?? []
     total.value = res.data.data.total ?? 0
   } else {
-    message.error('获取数据失败，' + res.data.message)
+    ElMessage.error('获取数据失败，' + res.data.message)
   }
 }
 
-// 页面加载时获取数据，请求一次
 onMounted(() => {
   fetchData()
 })
 
-// 分页参数
-const pagination = computed(() => {
-  return {
-    current: searchParams.current,
-    pageSize: searchParams.pageSize,
-    total: total.value,
-    showSizeChanger: true,
-    showTotal: (total) => `共 ${total} 条`,
-  }
-})
-
-// 表格变化之后，重新获取数据
-const doTableChange = (page: any) => {
-  searchParams.current = page.current
-  searchParams.pageSize = page.pageSize
+const onPageChange = (page: number) => {
+  searchParams.current = page
   fetchData()
 }
 
-// 搜索数据
-const doSearch = () => {
-  // 重置页码
+const onSizeChange = (size: number) => {
+  searchParams.pageSize = size
   searchParams.current = 1
   fetchData()
 }
 
-// 删除数据
+const doSearch = () => {
+  searchParams.current = 1
+  fetchData()
+}
+
 const doDelete = async (id: string) => {
   if (!id) {
     return
   }
   const res = await deletePictureUsingPost({ id })
   if (res.data.code === 0) {
-    message.success('删除成功')
-    // 刷新数据
+    ElMessage.success('删除成功')
     fetchData()
   } else {
-    message.error('删除失败')
+    ElMessage.error('删除失败')
   }
 }
 
-// 审核图片
 const handleReview = async (record: API.Picture, reviewStatus: number) => {
   const reviewMessage =
     reviewStatus === PIC_REVIEW_STATUS_ENUM.PASS ? '管理员操作通过' : '管理员操作拒绝'
@@ -264,11 +224,10 @@ const handleReview = async (record: API.Picture, reviewStatus: number) => {
     reviewMessage,
   })
   if (res.data.code === 0) {
-    message.success('审核操作成功')
-    // 重新获取列表数据
+    ElMessage.success('审核操作成功')
     fetchData()
   } else {
-    message.error('审核操作失败，' + res.data.message)
+    ElMessage.error('审核操作失败，' + res.data.message)
   }
 }
 </script>

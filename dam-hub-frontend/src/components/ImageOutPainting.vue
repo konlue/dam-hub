@@ -1,17 +1,16 @@
 <template>
-  <a-modal
+  <el-dialog
     class="image-out-painting"
-    v-model:visible="visible"
+    v-model="visible"
     title="AI 扩图"
-    :footer="false"
-    @cancel="closeModal"
+    @close="closeModal"
   >
-    <a-row gutter="16">
-      <a-col span="12">
+    <el-row :gutter="16">
+      <el-col :span="12">
         <h4>原始图片</h4>
         <img :src="picture?.url" :alt="picture?.name" style="max-width: 100%" />
-      </a-col>
-      <a-col span="12">
+      </el-col>
+      <el-col :span="12">
         <h4>扩图结果</h4>
         <img
           v-if="resultImageUrl"
@@ -19,16 +18,16 @@
           :alt="picture?.name"
           style="max-width: 100%"
         />
-      </a-col>
-    </a-row>
+      </el-col>
+    </el-row>
     <div style="margin-bottom: 16px" />
-    <a-flex justify="center" gap="16">
-      <a-button type="primary" :loading="!!taskId" ghost @click="createTask">生成图片</a-button>
-      <a-button v-if="resultImageUrl" type="primary" :loading="uploadLoading" @click="handleUpload">
+    <div style="display: flex; justify-content: center; gap: 16px">
+      <el-button type="primary" :loading="!!taskId" plain @click="createTask">生成图片</el-button>
+      <el-button v-if="resultImageUrl" type="primary" :loading="uploadLoading" @click="handleUpload">
         应用结果
-      </a-button>
-    </a-flex>
-  </a-modal>
+      </el-button>
+    </div>
+  </el-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -38,7 +37,7 @@ import {
   getPictureOutPaintingTaskUsingGet,
   uploadPictureByUrlUsingPost,
 } from '@/api/pictureController.ts'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 
 interface Props {
   picture?: API.PictureVO
@@ -50,39 +49,31 @@ const props = defineProps<Props>()
 
 const resultImageUrl = ref<string>('')
 
-// 任务 id
 const taskId = ref<string>()
 
-/**
- * 创建任务
- */
 const createTask = async () => {
   if (!props.picture?.id) {
     return
   }
   const res = await createPictureOutPaintingTaskUsingPost({
     pictureId: props.picture.id,
-    // 根据需要设置扩图参数
     parameters: {
       xScale: 2,
       yScale: 2,
     },
   })
   if (res.data.code === 0 && res.data.data) {
-    message.success('创建任务成功，请耐心等待，不要退出界面')
+    ElMessage.success('创建任务成功，请耐心等待，不要退出界面')
     console.log(res.data.data.output.taskId)
     taskId.value = res.data.data.output.taskId
-    // 开启轮询
     startPolling()
   } else {
-    message.error('图片任务失败，' + res.data.message)
+    ElMessage.error('图片任务失败，' + res.data.message)
   }
 }
 
-// 轮询定时器
 let pollingTimer: NodeJS.Timeout = null
 
-// 开始轮询
 const startPolling = () => {
   if (!taskId.value) {
     return
@@ -96,26 +87,22 @@ const startPolling = () => {
       if (res.data.code === 0 && res.data.data) {
         const taskResult = res.data.data.output
         if (taskResult.taskStatus === 'SUCCEEDED') {
-          message.success('扩图任务执行成功')
+          ElMessage.success('扩图任务执行成功')
           resultImageUrl.value = taskResult.outputImageUrl
-          // 清理轮询
           clearPolling()
         } else if (taskResult.taskStatus === 'FAILED') {
-          message.error('扩图任务执行失败')
-          // 清理轮询
+          ElMessage.error('扩图任务执行失败')
           clearPolling()
         }
       }
     } catch (error) {
       console.error('扩图任务轮询失败', error)
-      message.error('扩图任务轮询失败，' + error.message)
-      // 清理轮询
+      ElMessage.error('扩图任务轮询失败')
       clearPolling()
     }
-  }, 3000) // 每 3 秒轮询一次
+  }, 3000)
 }
 
-// 清理轮询
 const clearPolling = () => {
   if (pollingTimer) {
     clearInterval(pollingTimer)
@@ -124,13 +111,8 @@ const clearPolling = () => {
   }
 }
 
-// 是否正在上传
 const uploadLoading = ref(false)
 
-/**
- * 上传图片
- * @param file
- */
 const handleUpload = async () => {
   uploadLoading.value = true
   try {
@@ -143,35 +125,29 @@ const handleUpload = async () => {
     }
     const res = await uploadPictureByUrlUsingPost(params)
     if (res.data.code === 0 && res.data.data) {
-      message.success('图片上传成功')
-      // 将上传成功的图片信息传递给父组件
+      ElMessage.success('图片上传成功')
       props.onSuccess?.(res.data.data)
-      // 关闭弹窗
       closeModal()
     } else {
-      message.error('图片上传失败，' + res.data.message)
+      ElMessage.error('图片上传失败，' + res.data.message)
     }
   } catch (error) {
     console.error('图片上传失败', error)
-    message.error('图片上传失败，' + error.message)
+    ElMessage.error('图片上传失败')
   }
   uploadLoading.value = false
 }
 
-// 是否可见
 const visible = ref(false)
 
-// 打开弹窗
 const openModal = () => {
   visible.value = true
 }
 
-// 关闭弹窗
 const closeModal = () => {
   visible.value = false
 }
 
-// 暴露函数给父组件
 defineExpose({
   openModal,
 })

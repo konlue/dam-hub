@@ -1,59 +1,65 @@
 <template>
   <div id="spaceManagePage">
-    <a-flex justify="space-between">
+    <div style="display: flex; justify-content: space-between; align-items: center">
       <h2>空间成员管理</h2>
-      <a-space>
-        <a-button type="primary" href="/add_space" target="_blank">+ 创建空间</a-button>
-        <a-button type="primary" ghost href="/space_analyze?queryPublic=1" target="_blank"
-          >分析公共图库
-        </a-button>
-        <a-button type="primary" ghost href="/space_analyze?queryAll=1" target="_blank"
-          >分析全部空间
-        </a-button>
-      </a-space>
-    </a-flex>
+      <div style="display: flex; gap: 8px">
+        <el-button type="primary" tag="a" href="/add_space" target="_blank">+ 创建空间</el-button>
+        <el-button type="primary" plain tag="a" href="/space_analyze?queryPublic=1" target="_blank">分析公共图库</el-button>
+        <el-button type="primary" plain tag="a" href="/space_analyze?queryAll=1" target="_blank">分析全部空间</el-button>
+      </div>
+    </div>
     <div style="margin-bottom: 16px" />
     <!-- 添加成员表单 -->
-    <a-form layout="inline" :model="formData" @finish="handleSubmit">
-      <a-form-item label="用户 id" name="userId">
-        <a-input v-model:value="formData.userId" placeholder="请输入用户 id" allow-clear />
-      </a-form-item>
-      <a-form-item>
-        <a-button type="primary" html-type="submit">添加用户</a-button>
-      </a-form-item>
-    </a-form>
+    <el-form :inline="true" :model="formData" @submit.prevent="handleSubmit">
+      <el-form-item label="用户 id">
+        <el-input v-model="formData.userId" placeholder="请输入用户 id" clearable />
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="handleSubmit">添加用户</el-button>
+      </el-form-item>
+    </el-form>
     <div style="margin-bottom: 16px" />
     <!-- 表格 -->
-    <a-table :columns="columns" :data-source="dataList">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'userInfo'">
-          <a-space>
-            <a-avatar :src="record.user?.userAvatar" />
-            {{ record.user?.userName }}
-          </a-space>
+    <el-table :data="dataList" stripe>
+      <el-table-column label="用户">
+        <template #default="{ row }">
+          <div style="display: flex; align-items: center; gap: 8px">
+            <el-avatar :src="row.user?.userAvatar" :size="32" />
+            {{ row.user?.userName }}
+          </div>
         </template>
-        <template v-if="column.dataIndex === 'spaceRole'">
-          <a-select
-            v-model:value="record.spaceRole"
-            :options="SPACE_ROLE_OPTIONS"
-            @change="(value) => editSpaceRole(value, record)"
-          />
+      </el-table-column>
+      <el-table-column label="角色" width="160">
+        <template #default="{ row }">
+          <el-select
+            v-model="row.spaceRole"
+            @change="(value) => editSpaceRole(value, row)"
+          >
+            <el-option
+              v-for="item in SPACE_ROLE_OPTIONS"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
         </template>
-        <template v-else-if="column.dataIndex === 'createTime'">
-          {{ dayjs(record.createTime).format('YYYY-MM-DD HH:mm:ss') }}
+      </el-table-column>
+      <el-table-column label="创建时间">
+        <template #default="{ row }">
+          {{ dayjs(row.createTime).format('YYYY-MM-DD HH:mm:ss') }}
         </template>
-        <template v-else-if="column.key === 'action'">
-          <a-space wrap>
-            <a-button type="link" danger @click="doDelete(record.id)">删除</a-button>
-          </a-space>
+      </el-table-column>
+      <el-table-column label="操作" width="100">
+        <template #default="{ row }">
+          <el-button type="danger" size="small" @click="doDelete(row.id)">删除</el-button>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
   </div>
 </template>
 <script lang="ts" setup>
 import { onMounted, reactive, ref } from 'vue'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import { SPACE_ROLE_OPTIONS } from '../../constants/space.ts'
 import {
   addSpaceUserUsingPost,
@@ -69,29 +75,8 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const columns = [
-  {
-    title: '用户',
-    dataIndex: 'userInfo',
-  },
-  {
-    title: '角色',
-    dataIndex: 'spaceRole',
-  },
-  {
-    title: '创建时间',
-    dataIndex: 'createTime',
-  },
-  {
-    title: '操作',
-    key: 'action',
-  },
-]
-
-// 定义数据
 const dataList = ref<API.SpaceUserVO[]>([])
 
-// 获取数据
 const fetchData = async () => {
   const spaceId = props.id
   if (!spaceId) {
@@ -103,19 +88,16 @@ const fetchData = async () => {
   if (res.data.code === 0 && res.data.data) {
     dataList.value = res.data.data ?? []
   } else {
-    message.error('获取数据失败，' + res.data.message)
+    ElMessage.error('获取数据失败，' + res.data.message)
   }
 }
 
-// 页面加载时获取数据，请求一次
 onMounted(() => {
   fetchData()
 })
 
-// 添加成员表单
 const formData = reactive<API.SpaceUserAddRequest>({})
 
-// 创建成员
 const handleSubmit = async () => {
   const spaceId = props.id
   if (!spaceId) {
@@ -126,39 +108,35 @@ const handleSubmit = async () => {
     ...formData,
   })
   if (res.data.code === 0) {
-    message.success('添加成功')
-    // 刷新数据
+    ElMessage.success('添加成功')
     fetchData()
   } else {
-    message.error('添加失败，' + res.data.message)
+    ElMessage.error('添加失败，' + res.data.message)
   }
 }
 
-// 编辑成员角色
 const editSpaceRole = async (value, record) => {
   const res = await editSpaceUserUsingPost({
     id: record.id,
     spaceRole: value,
   })
   if (res.data.code === 0) {
-    message.success('修改成功')
+    ElMessage.success('修改成功')
   } else {
-    message.error('修改失败，' + res.data.message)
+    ElMessage.error('修改失败，' + res.data.message)
   }
 }
 
-// 删除数据
 const doDelete = async (id: string) => {
   if (!id) {
     return
   }
   const res = await deleteSpaceUserUsingPost({ id })
   if (res.data.code === 0) {
-    message.success('删除成功')
-    // 刷新数据
+    ElMessage.success('删除成功')
     fetchData()
   } else {
-    message.error('删除失败')
+    ElMessage.error('删除失败')
   }
 }
 </script>

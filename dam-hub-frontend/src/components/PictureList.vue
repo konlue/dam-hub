@@ -1,58 +1,51 @@
 <template>
   <div class="picture-list">
     <!-- 图片列表 -->
-    <a-list
-      :grid="{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 4, xl: 5, xxl: 6 }"
-      :data-source="dataList"
-      :loading="loading"
-    >
-      <template #renderItem="{ item: picture }">
-        <a-list-item style="padding: 0">
-          <!-- 单张图片 -->
-          <a-card hoverable @click="doClickPicture(picture)">
-            <template #cover>
-              <img
-                :alt="picture.name"
-                :src="picture.thumbnailUrl ?? picture.url"
-                style="height: 180px; object-fit: cover"
-              />
-            </template>
-            <a-card-meta :title="picture.name">
-              <template #description>
-                <a-flex>
-                  <a-tag color="green">
-                    {{ picture.category ?? '默认' }}
-                  </a-tag>
-                  <a-tag v-for="tag in picture.tags" :key="tag">
-                    {{ tag }}
-                  </a-tag>
-                </a-flex>
-              </template>
-            </a-card-meta>
-            <template v-if="showOp" #actions>
-              <ShareAltOutlined @click="(e) => doShare(picture, e)" />
-              <SearchOutlined @click="(e) => doSearch(picture, e)" />
-              <EditOutlined v-if="canEdit" @click="(e) => doEdit(picture, e)" />
-              <DeleteOutlined v-if="canDelete" @click="(e) => doDelete(picture, e)" />
-            </template>
-          </a-card>
-        </a-list-item>
-      </template>
-    </a-list>
+    <div v-loading="loading" class="picture-grid">
+      <div v-for="picture in dataList" :key="picture.id" class="picture-grid-item">
+        <el-card shadow="hover" @click="doClickPicture(picture)" class="picture-card">
+          <img
+            :alt="picture.name"
+            :src="picture.thumbnailUrl ?? picture.url"
+            class="picture-cover"
+          />
+          <div class="picture-info">
+            <div class="picture-name">{{ picture.name }}</div>
+            <div class="picture-tags">
+              <el-tag type="success" size="small">
+                {{ picture.category ?? '默认' }}
+              </el-tag>
+              <el-tag v-for="tag in picture.tags" :key="tag" size="small">
+                {{ tag }}
+              </el-tag>
+            </div>
+          </div>
+          <div v-if="showOp" class="picture-actions">
+            <el-button link @click="(e) => doShare(picture, e)">
+              <el-icon><Share /></el-icon>
+            </el-button>
+            <el-button link @click="(e) => doSearch(picture, e)">
+              <el-icon><Search /></el-icon>
+            </el-button>
+            <el-button v-if="canEdit" link @click="(e) => doEdit(picture, e)">
+              <el-icon><Edit /></el-icon>
+            </el-button>
+            <el-button v-if="canDelete" link type="danger" @click="(e) => doDelete(picture, e)">
+              <el-icon><Delete /></el-icon>
+            </el-button>
+          </div>
+        </el-card>
+      </div>
+    </div>
     <ShareModal ref="shareModalRef" :link="shareLink" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import {
-  DeleteOutlined,
-  EditOutlined,
-  SearchOutlined,
-  ShareAltOutlined,
-} from '@ant-design/icons-vue'
+import { Delete, Edit, Search, Share } from '@element-plus/icons-vue'
 import { deletePictureUsingPost } from '@/api/pictureController.ts'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import ShareModal from '@/components/ShareModal.vue'
 import { ref } from 'vue'
 
@@ -74,26 +67,19 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const router = useRouter()
-// 跳转至图片详情页
 const doClickPicture = (picture: API.PictureVO) => {
   router.push({
     path: `/picture/${picture.id}`,
   })
 }
 
-// 搜索
 const doSearch = (picture, e) => {
-  // 阻止冒泡
   e.stopPropagation()
-  // 打开新的页面
   window.open(`/search_picture?pictureId=${picture.id}`)
 }
 
-// 编辑
 const doEdit = (picture, e) => {
-  // 阻止冒泡
   e.stopPropagation()
-  // 跳转时一定要携带 spaceId
   router.push({
     path: '/add_picture',
     query: {
@@ -103,9 +89,7 @@ const doEdit = (picture, e) => {
   })
 }
 
-// 删除数据
 const doDelete = async (picture, e) => {
-  // 阻止冒泡
   e.stopPropagation()
   const id = picture.id
   if (!id) {
@@ -113,20 +97,16 @@ const doDelete = async (picture, e) => {
   }
   const res = await deletePictureUsingPost({ id })
   if (res.data.code === 0) {
-    message.success('删除成功')
+    ElMessage.success('删除成功')
     props.onReload?.()
   } else {
-    message.error('删除失败')
+    ElMessage.error('删除失败')
   }
 }
 
-// ----- 分享操作 ----
 const shareModalRef = ref()
-// 分享链接
 const shareLink = ref<string>()
-// 分享
 const doShare = (picture, e) => {
-  // 阻止冒泡
   e.stopPropagation()
   shareLink.value = `${window.location.protocol}//${window.location.host}/picture/${picture.id}`
   if (shareModalRef.value) {
@@ -135,4 +115,53 @@ const doShare = (picture, e) => {
 }
 </script>
 
-<style scoped></style>
+<style scoped>
+.picture-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.picture-card {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.picture-card:hover {
+  transform: translateY(-2px);
+}
+
+.picture-cover {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+.picture-info {
+  padding: 8px 0;
+}
+
+.picture-name {
+  font-weight: 500;
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picture-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.picture-actions {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+  margin-top: 8px;
+}
+</style>
