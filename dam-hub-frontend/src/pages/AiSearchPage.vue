@@ -16,24 +16,48 @@
       </el-input>
       <!-- 过滤条件 -->
       <div class="filter-bar">
-        <el-input
-          v-model="form.spaceId"
-          placeholder="空间 ID（可选）"
-          style="width: 150px"
-          clearable
-        />
-        <el-input
+        <el-select
           v-model="form.category"
           placeholder="分类过滤（可选）"
-          style="width: 150px"
+          style="width: 160px"
           clearable
-        />
-        <el-input
+          filterable
+        >
+          <el-option
+            v-for="cat in categoryOptions"
+            :key="cat"
+            :label="cat"
+            :value="cat"
+          />
+        </el-select>
+        <el-select
           v-model="form.color"
           placeholder="颜色过滤（可选）"
-          style="width: 150px"
+          style="width: 160px"
           clearable
-        />
+          filterable
+          allow-create
+        >
+          <el-option
+            v-for="c in colorOptions"
+            :key="c.value"
+            :label="c.label"
+            :value="c.value"
+          >
+            <div style="display: flex; align-items: center; gap: 8px">
+              <div
+                :style="{
+                  width: '14px',
+                  height: '14px',
+                  borderRadius: '3px',
+                  backgroundColor: c.hex,
+                  border: '1px solid #dcdfe6',
+                }"
+              />
+              <span>{{ c.label }}</span>
+            </div>
+          </el-option>
+        </el-select>
       </div>
     </div>
 
@@ -145,12 +169,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search, Refresh, Picture } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { aiSearchUsingPost } from '@/api/aiController.ts'
-import { getPictureVoByIdUsingGet } from '@/api/pictureController.ts'
+import { getPictureVoByIdUsingGet, listPictureTagCategoryUsingGet } from '@/api/pictureController.ts'
 import { marked } from 'marked'
 
 const router = useRouter()
@@ -161,9 +185,40 @@ const hasSearched = ref(false)
 const result = ref<API.AiSearchResponse | null>(null)
 
 const form = reactive({
-  spaceId: '',
   category: '',
   color: '',
+})
+
+const categoryOptions = ref<string[]>([])
+
+const colorOptions = [
+  { value: '0x000000', label: '黑色', hex: '#000000' },
+  { value: '0xFFFFFF', label: '白色', hex: '#ffffff' },
+  { value: '0xFF0000', label: '红色', hex: '#ff0000' },
+  { value: '0x00FF00', label: '绿色', hex: '#00ff00' },
+  { value: '0x0000FF', label: '蓝色', hex: '#0000ff' },
+  { value: '0xFFFF00', label: '黄色', hex: '#ffff00' },
+  { value: '0xFFA500', label: '橙色', hex: '#ffa500' },
+  { value: '0x800080', label: '紫色', hex: '#800080' },
+  { value: '0xFFC0CB', label: '粉色', hex: '#ffc0cb' },
+  { value: '0x808080', label: '灰色', hex: '#808080' },
+  { value: '0x00FFFF', label: '青色', hex: '#00ffff' },
+  { value: '0x8B4513', label: '棕色', hex: '#8b4513' },
+]
+
+const fetchCategoryOptions = async () => {
+  try {
+    const res = await listPictureTagCategoryUsingGet()
+    if (res.data.code === 0 && res.data.data) {
+      categoryOptions.value = res.data.data.categoryList ?? []
+    }
+  } catch {
+    // 分类加载失败不影响搜索
+  }
+}
+
+onMounted(() => {
+  fetchCategoryOptions()
 })
 
 const renderedAnswer = computed(() => {
@@ -200,9 +255,6 @@ const doSearch = async () => {
     const params: API.AiSearchRequest = {
       query: searchQuery.value.trim(),
       topK: 5,
-    }
-    if (form.spaceId) {
-      params.spaceId = Number(form.spaceId)
     }
     if (form.category) {
       params.category = form.category
