@@ -1,10 +1,6 @@
 # DAM-HUB 企业图素中台
 
-企业级图片素材管理平台，提供素材上传、智能检索、团队协作和 AI 策展能力，帮助企业统一管理品牌视觉资产。
-
----
-
-**技术栈**
+企业级图片素材平台，提供素材上传、智能检索、团队协作和 AI 策展能力，帮助企业统一管理品牌视觉资产。
 
 ![Java](https://img.shields.io/badge/Java-17+-orange?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7-green?logo=springboot&logoColor=white)
