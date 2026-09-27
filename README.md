@@ -137,19 +137,19 @@ dam-hub/
 
 **首页**
 
-![首页截图](./screenshots/homepage.jpeg)
+![首页截图](./screenshots/rm-homepage.jpeg)
 
 **图片详情**
 
-![图片详情截图](./screenshots/picture-detail.jpeg)
+![图片详情截图](./screenshots/rm-picture-detail.jpeg)
 
 **空间管理**
 
-![空间管理截图](./screenshots/space.jpeg)
+![空间管理截图](./screenshots/rm-space.jpeg)
 
 **空间分析**
 
-![空间分析截图](./screenshots/analyze.jpeg)
+![空间分析截图](./screenshots/rm-analyze.jpeg)
 
 ## 相关项目
 
